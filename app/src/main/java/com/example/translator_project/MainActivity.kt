@@ -26,27 +26,12 @@ import android.widget.ArrayAdapter
 import android.widget.ImageButton
 import android.widget.Spinner
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.example.translator_project.databinding.ActivityMainBinding
-import com.google.android.gms.tasks.OnFailureListener
-import com.google.android.gms.tasks.OnSuccessListener
-import com.google.mlkit.common.model.DownloadConditions
-import com.google.mlkit.nl.languageid.LanguageIdentification
-import com.google.mlkit.nl.languageid.LanguageIdentificationOptions
-import com.google.mlkit.nl.languageid.LanguageIdentifier
-import com.google.mlkit.nl.translate.Translation
-import com.google.mlkit.nl.translate.Translator
-import com.google.mlkit.nl.translate.TranslatorOptions
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.TextRecognizer
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.io.File
 import java.io.FileDescriptor
 import java.io.IOException
@@ -68,14 +53,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textRecognitionHelper: TextRecognitionHelper
 
     private var delay: Long = 1000 // 1 seconds after user stops typing
-    private var last_text_edit: Long = 0
+    private var lastTextEdit: Long = 0
     private var handler = Handler()
 
     private lateinit var currentPhotoPath: String
     var fromIdx: Int = -1
     var toIdx: Int = -1
-    var languages: ArrayList<String> = arrayListOf("Select Language", "English", "French", "Vietnamese")
-    var languageCodes: ArrayList<String> = arrayListOf("detect", "en", "fr", "vi")
+    var languages: ArrayList<String> = arrayListOf("Select Language", "English", "French", "Vietnamese", "Spanish", "German", "Portuguese", "Italian")
+    var languageCodes: ArrayList<String> = arrayListOf("detect", "en", "fr", "vi", "es", "de", "pt", "it")
 
     private var activityResultLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -93,14 +78,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        Utils().hideSystemUI(this)
+//        Utils().hideSystemUI(this)
 
         translatorHelper = TranslatorHelper(this)
         textRecognitionHelper = TextRecognitionHelper(this)
-//        languageIdentifier = LanguageIdentification.getClient(
-//                                LanguageIdentificationOptions.Builder()
-//                                    .setConfidenceThreshold(0.55f)
-//                                    .build())
 
         photoBtn = binding.uploadImage
         micBtn = binding.mic
@@ -126,6 +107,8 @@ class MainActivity : AppCompatActivity() {
                 // Optional: Your code when nothing is selected
             }
         }
+
+        fromSpinner.isEnabled = false
 
         toSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -187,7 +170,7 @@ class MainActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {
                 // This method is called to notify you that somewhere within s, the text has been changed.
                 if (s.toString().trim() != "") {
-                    last_text_edit = System.currentTimeMillis()
+                    lastTextEdit = System.currentTimeMillis()
                     handler.postDelayed(inputFinishChecker, delay)
                 } else {
                     binding.translateText.setText("")
@@ -198,129 +181,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        Utils().hideSystemUI(this)
+//        Utils().hideSystemUI(this)
     }
-
-    private fun hideSystemUI() {
-        // Set the IMMERSIVE flag.
-        // Set the content to appear under the system bars so that the content
-        // doesn't resize when the system bars hide and show.
-        window.decorView.setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
-                    or View.SYSTEM_UI_FLAG_IMMERSIVE
-        )
-    }
-
-//    private fun detectAndTranslate(s: String) {
-//        binding.translateText.setText("")
-//        val re = Regex("[\\.,]")
-//        val noPuncStr = re.replace(s, "").trim() // works
-//        languageIdentifier.identifyLanguage(noPuncStr).addOnSuccessListener { languageCode ->
-//            if (languageCode == "und") {
-//                Log.i("LanguageIdentifier Log Can't Detect", "Can't identify language of " + noPuncStr)
-//                Toast.makeText(this@MainActivity, "Language input is not detected", Toast.LENGTH_SHORT).show()
-//            } else {
-//                Log.i("LanguageIdentifier Log Detect", "Str(${noPuncStr}) is of Language: $languageCode")
-//                val langIdx = languageCodes.indexOf(languageCode)
-//
-//                if (langIdx == -1) {
-//                    Toast.makeText(this@MainActivity, "Language $languageCode is not supported", Toast.LENGTH_SHORT).show()
-//                } else {
-//                    fromIdx = langIdx
-//                    fromSpinner.setSelection(fromIdx)
-//                }
-//
-//                if (toIdx <= 0) {
-//                    Toast.makeText(this@MainActivity, "Please select target language to translate", Toast.LENGTH_SHORT).show()
-//                }
-//
-//                if (fromIdx > 0 && toIdx > 0) {
-//                    Toast.makeText(this@MainActivity, "Translating (${languageCodes[fromIdx]} -> ${languageCodes[toIdx]})...", Toast.LENGTH_SHORT).show()
-//                    translateText(languageCodes[fromIdx], languageCodes[toIdx], s)
-//                }
-//            }
-//        }
-//    }
-
-
-//    private fun translateText(from:String, to:String, text: String) {
-//        val options = TranslatorOptions.Builder()
-//            .setSourceLanguage(from)
-//            .setTargetLanguage(to)
-//            .build()
-//        translator = Translation.getClient(options)
-//        var conditions = DownloadConditions.Builder()
-//            .requireWifi()
-//            .build()
-//        translator.downloadModelIfNeeded(conditions)
-//            .addOnSuccessListener {
-//                // Model downloaded successfully. Okay to start translating.
-//                // (Set a flag, unhide the translation UI, etc.)
-//                translator.translate(text)
-//                    .addOnSuccessListener { translatedText ->
-//                        // Translation successful.
-//                        binding.translateText.setText(translatedText)
-//                    }
-//                    .addOnFailureListener { exception ->
-//                        // Error.
-//                        // ...
-//                        Toast.makeText(this@MainActivity, "Error to translate", Toast.LENGTH_SHORT).show()
-//                    }
-//            }
-//            .addOnFailureListener { exception ->
-//                // Model couldn’t be downloaded or other internal error.
-//                // ...
-//                Log.d("Error Line 162:", exception.toString())
-//                Toast.makeText(this@MainActivity, "Error in download model", Toast.LENGTH_SHORT).show()
-//            }
-//    }
-
-
-//    private fun runTextRecognition(bitmap: Bitmap) {
-//        val image = InputImage.fromBitmap(bitmap, 0)
-//        val recognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-//        photoBtn.isEnabled = false
-//        recognizer.process(image)
-//            .addOnSuccessListener(
-//                OnSuccessListener<Any?> { texts ->
-//                    photoBtn.isEnabled = true
-//                    processTextRecognitionResult(texts as Text)
-//                })
-//            .addOnFailureListener(
-//                OnFailureListener { e -> // Task failed with an exception
-//                    photoBtn.isEnabled = true
-//                    e.printStackTrace()
-//                })
-//    }
-
-//    private fun processTextRecognitionResult(texts: Text) {
-//        val blocks: List<Text.TextBlock> = texts.textBlocks
-//        if (blocks.isEmpty()) {
-//            Toast.makeText(this, "No text found", Toast.LENGTH_SHORT).show()
-//            return
-//        }
-//
-//        var textToDisplay = ""
-//        for (i in blocks.indices) {
-//            val lines: List<Text.Line> = blocks[i].lines
-//            for (j in lines.indices) {
-//                val elements: List<Text.Element> = lines[j].elements
-//                for (k in elements.indices) {
-//                    Log.d("Text Recognized:", elements[k].text)
-//                    textToDisplay += elements[k].text + " "
-//                }
-//                textToDisplay = textToDisplay.trim()
-//                textToDisplay += "\n"
-//            }
-//        }
-//        Log.d("Text Recognized:", textToDisplay.trim())
-//        binding.inputText.setText(textToDisplay)
-//    }
-
 
     private fun toggleBtn(btn1: ImageButton, btn2: ImageButton, btn3: ImageButton,
                           txt1: TextView, txt2: TextView, txt3: TextView) {
@@ -352,7 +214,7 @@ class MainActivity : AppCompatActivity() {
                 //The startActivityForResult() method is deprecated in favor of the Activity Result API, which provides a more modern and flexible approach for handling the result returned by an activity.
             }
         } catch (ex: Exception) {
-            Toast.makeText(this, "Error occurred while creating the File", Toast.LENGTH_SHORT).show()
+            Utils().displayToastMessage(this, "Error occurred while creating the File")
         }
     }
 
@@ -406,7 +268,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        Utils().hideSystemUI(this)
+//        Utils().hideSystemUI(this)
         if (requestCode == RQ_SPEECH_REC && resultCode == RESULT_OK) {
             val result = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
             val handler = Handler(Looper.getMainLooper())
@@ -415,17 +277,23 @@ class MainActivity : AppCompatActivity() {
                 binding.inputText.setText(result?.get(0).toString())
             }
             handler.postDelayed(runnable, 500)
-        } else if (resultCode == AppCompatActivity.RESULT_OK && requestCode == IMAGE_CAPTURE_CODE) {
+        } else if (resultCode == RESULT_OK && requestCode == IMAGE_CAPTURE_CODE) {
             // Process and display the captured image
-            val imageBitmap = BitmapFactory.decodeFile(currentPhotoPath)
-            val rotatedBitmap = rotateImageIfRequired(imageBitmap)
-            textRecognitionHelper.runTextRecognition(rotatedBitmap)
+            if (::currentPhotoPath.isInitialized) {
+                val imageBitmap = BitmapFactory.decodeFile(currentPhotoPath)
+                val rotatedBitmap = rotateImageIfRequired(imageBitmap)
+                textRecognitionHelper.runTextRecognition(rotatedBitmap)
+            } else {
+                Utils().displayToastMessage(this, "Something went wrong with text detector. Please try again")
+                Log.e("MainActivity", "currentPhotoPath is not initialized")
+            }
         }
     }
 
     private fun askSpeechInput() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            Toast.makeText(this, "Speech recognition is not available", Toast.LENGTH_SHORT).show()
+            Utils().displayToastMessage(this, "Speech recognition is not available")
+//            Toast.makeText(this, "Speech recognition is not available", Toast.LENGTH_SHORT).show()
         } else {
             val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -437,7 +305,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val inputFinishChecker = Runnable {
-        if (System.currentTimeMillis() > last_text_edit + delay - 500) {
+        if (System.currentTimeMillis() > lastTextEdit + delay - 500) {
             if (binding.inputText.text.toString() != "") {
                 translatorHelper.detectAndTranslate(binding.inputText.text.toString().trim())
             }
@@ -449,7 +317,7 @@ class MainActivity : AppCompatActivity() {
         private const val IMAGE_CAPTURE_CODE = 1002
         private const val CAMERA_REQUEST_CODE = 1003
         private const val PHOTO_LIB_REQUEST_CODE = 1004
-        private val RQ_SPEECH_REC = 102
-        private val RECORD_AUDIO_CODE = 103
+        private const val RQ_SPEECH_REC = 102
+        private const val RECORD_AUDIO_CODE = 103
     }
 }

@@ -1,11 +1,12 @@
 package com.example.translator_project
 
 import android.util.Log
-import android.widget.Toast
 import com.google.mlkit.common.model.DownloadConditions
+import com.google.mlkit.common.model.RemoteModelManager
 import com.google.mlkit.nl.languageid.LanguageIdentification
 import com.google.mlkit.nl.languageid.LanguageIdentificationOptions
 import com.google.mlkit.nl.languageid.LanguageIdentifier
+import com.google.mlkit.nl.translate.TranslateRemoteModel
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
@@ -19,6 +20,39 @@ class TranslatorHelper(private val activity: MainActivity) {
             .build()
     )
 
+    init {
+        downloadTranslationModels()
+    }
+
+    private fun downloadTranslationModels() {
+        val modelManager = RemoteModelManager.getInstance()
+        modelManager.getDownloadedModels(TranslateRemoteModel::class.java)
+            .addOnSuccessListener { models ->
+                // ...
+                val downloadedLanguages = models.map { it.language }
+                for (languageCode in activity.languageCodes) {
+                    if (languageCode != "detect" && !downloadedLanguages.contains(languageCode)) {
+                        val model = TranslateRemoteModel.Builder(languageCode).build()
+                        val conditions = DownloadConditions.Builder()
+                            .requireWifi()
+                            .build()
+                        modelManager.download(model, conditions)
+                            .addOnSuccessListener {
+                                // Model downloaded.
+                                Log.i("Download Translation Model", "Successufully download translation for $languageCode")
+                            }
+                            .addOnFailureListener {
+                                // Error.
+                                Log.i("Download Translation Model", "Unsuccessufully download translation for $languageCode")
+                            }
+                    }
+                }
+            }
+            .addOnFailureListener {
+                // Error.
+            }
+    }
+
     fun detectAndTranslate(s: String) {
         activity.binding.translateText.setText("")
         val re = Regex("[\\.,]")
@@ -26,24 +60,24 @@ class TranslatorHelper(private val activity: MainActivity) {
         languageIdentifier.identifyLanguage(noPuncStr).addOnSuccessListener { languageCode ->
             if (languageCode == "und") {
                 Log.i("LanguageIdentifier Log Can't Detect", "Can't identify language of " + noPuncStr)
-                Toast.makeText(activity, "Language input is not detected", Toast.LENGTH_SHORT).show()
+                Utils().displayToastMessage(activity, "Language input is not detected")
             } else {
                 Log.i("LanguageIdentifier Log Detect", "Str(${noPuncStr}) is of Language: $languageCode")
                 val langIdx = activity.languageCodes.indexOf(languageCode)
 
                 if (langIdx == -1) {
-                    Toast.makeText(activity, "Language $languageCode is not supported", Toast.LENGTH_SHORT).show()
+                    Utils().displayToastMessage(activity, "Language $languageCode is not supported")
                 } else {
                     activity.fromIdx = langIdx
                     activity.fromSpinner.setSelection(activity.fromIdx)
                 }
 
                 if (activity.toIdx <= 0) {
-                    Toast.makeText(activity, "Please select target language to translate", Toast.LENGTH_SHORT).show()
+                    Utils().displayToastMessage(activity, "Please select target language to translate")
                 }
 
                 if (activity.fromIdx > 0 && activity.toIdx > 0) {
-                    Toast.makeText(activity, "Translating (${activity.languageCodes[activity.fromIdx]} -> ${activity.languageCodes[activity.toIdx]})...", Toast.LENGTH_SHORT).show()
+                    Utils().displayToastMessage(activity, "Translating (${activity.languageCodes[activity.fromIdx]} -> ${activity.languageCodes[activity.toIdx]})...")
                     translateText(activity.languageCodes[activity.fromIdx], activity.languageCodes[activity.toIdx], s)
                 }
             }
@@ -71,14 +105,15 @@ class TranslatorHelper(private val activity: MainActivity) {
                     .addOnFailureListener { exception ->
                         // Error.
                         // ...
-                        Toast.makeText(activity, "Error to translate", Toast.LENGTH_SHORT).show()
+                        Log.d("TranslatorHelperLog", "Failure on Translation with Error $exception")
+                        Utils().displayToastMessage(activity, "Error to translate")
                     }
             }
             .addOnFailureListener { exception ->
                 // Model couldn’t be downloaded or other internal error.
                 // ...
                 Log.d("Error Line 162:", exception.toString())
-                Toast.makeText(activity, "Error in download model", Toast.LENGTH_SHORT).show()
+                Utils().displayToastMessage(activity, "Error in download model")
             }
     }
 }

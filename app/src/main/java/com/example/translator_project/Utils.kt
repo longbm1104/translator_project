@@ -1,6 +1,7 @@
 package com.example.translator_project
 
 import android.view.View
+import android.widget.Toast
 
 class Utils {
 
@@ -16,5 +17,9 @@ class Utils {
                     or View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
                     or View.SYSTEM_UI_FLAG_IMMERSIVE
         )
+    }
+
+    fun displayToastMessage(activity: MainActivity, message: String) {
+        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
     }
 }

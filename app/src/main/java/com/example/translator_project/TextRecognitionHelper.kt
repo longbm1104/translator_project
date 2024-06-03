@@ -2,7 +2,6 @@ package com.example.translator_project
 
 import android.graphics.Bitmap
 import android.util.Log
-import android.widget.Toast
 import com.google.android.gms.tasks.OnFailureListener
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.mlkit.vision.common.InputImage
@@ -30,7 +29,7 @@ class TextRecognitionHelper(private val activity: MainActivity) {
     private fun processTextRecognitionResult(texts: Text) {
         val blocks: List<Text.TextBlock> = texts.textBlocks
         if (blocks.isEmpty()) {
-            Toast.makeText(activity, "No text found", Toast.LENGTH_SHORT).show()
+            Utils().displayToastMessage(activity, "No text detected!")
             return
         }
 
