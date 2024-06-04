@@ -293,7 +293,6 @@ class MainActivity : AppCompatActivity() {
     private fun askSpeechInput() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             Utils().displayToastMessage(this, "Speech recognition is not available")
-//            Toast.makeText(this, "Speech recognition is not available", Toast.LENGTH_SHORT).show()
         } else {
             val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)

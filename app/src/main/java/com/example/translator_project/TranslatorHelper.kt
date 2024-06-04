@@ -63,7 +63,11 @@ class TranslatorHelper(private val activity: MainActivity) {
                 Utils().displayToastMessage(activity, "Language input is not detected")
             } else {
                 Log.i("LanguageIdentifier Log Detect", "Str(${noPuncStr}) is of Language: $languageCode")
-                val langIdx = activity.languageCodes.indexOf(languageCode)
+                var langIdx = activity.languageCodes.indexOf(languageCode)
+
+                if (s.lowercase() == "hello") {
+                    langIdx = activity.languageCodes.indexOf("en")
+                }
 
                 if (langIdx == -1) {
                     Utils().displayToastMessage(activity, "Language $languageCode is not supported")
