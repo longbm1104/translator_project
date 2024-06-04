@@ -42,6 +42,7 @@ import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
+    // Declare the needed variables and components
     lateinit var binding: ActivityMainBinding
     private lateinit var photoBtn: ImageButton
     private lateinit var micBtn: ImageButton
@@ -78,10 +79,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-//        Utils().hideSystemUI(this)
+        Utils().hideSystemUI(this) // Hide the navigation bar for small phone
 
-        translatorHelper = TranslatorHelper(this)
-        textRecognitionHelper = TextRecognitionHelper(this)
+        translatorHelper = TranslatorHelper(this)  // Getting translator helper class
+        textRecognitionHelper = TextRecognitionHelper(this) // Getting text recognizer helper class
 
         photoBtn = binding.uploadImage
         micBtn = binding.mic
@@ -97,10 +98,6 @@ class MainActivity : AppCompatActivity() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 // Your code when an item is selected
                 fromIdx = position
-                if (position != 0) {
-                    val item = parent!!.getItemAtPosition(position).toString()
-//                    Toast.makeText(this@MainActivity, "Selected Item:" + item, Toast.LENGTH_SHORT).show()
-                }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -110,13 +107,14 @@ class MainActivity : AppCompatActivity() {
 
         fromSpinner.isEnabled = false
 
+        // Set onItemSelectionListener for target language spinner. Whenever a target language is chosen, it will run the code inside the listener
         toSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 // Your code when an item is selected
                 toIdx = position
                 if (position != 0) {
-                    val item = parent!!.getItemAtPosition(position).toString()
-//                    Toast.makeText(this@MainActivity, "Selected Item:" + item, Toast.LENGTH_SHORT).show()
+
+                    // If the input text is not empty and a target language is chosen, trigger the language detection and translation
                     if (binding.inputText.text.toString() != "") {
                         translatorHelper.detectAndTranslate(binding.inputText.text.toString().trim())
                     }
@@ -128,35 +126,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        photoBtn.setOnClickListener {
-            toggleBtn(photoBtn, micBtn, cameraBtn, binding.photoText, binding.micText, binding.cameraText)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                // Request camera permission if not granted
-                requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PHOTO_LIB_REQUEST_CODE)
-            } else {
-                selectImage()
-            }
-        }
+        // Setup the buttons
+        setupButtons()
 
-        micBtn.setOnClickListener {
-            Log.d("Line 116 Log", Locale.getAvailableLocales().toString())
-            toggleBtn(micBtn, photoBtn, cameraBtn, binding.micText, binding.photoText, binding.cameraText)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), RECORD_AUDIO_CODE)
-            } else {
-                askSpeechInput()
-            }
-        }
-
-        cameraBtn.setOnClickListener {
-            toggleBtn(cameraBtn, micBtn, photoBtn, binding.cameraText, binding.micText, binding.photoText)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.CAMERA), CAMERA_REQUEST_CODE)
-            } else {
-                openCamera()
-            }
-        }
-
+        // Add on text change listner to detect when there is a text in the input box to trigger the translation
         binding.inputText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
                 // This method is called to notify you that the characters within start and start + before are about to be replaced with new text with length after.
@@ -164,11 +137,13 @@ class MainActivity : AppCompatActivity() {
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 // This method is called to notify you that somewhere within s, the text has been replaced with new text with length count
+                // this is to make sure that we wait for the users to finish typing
                 handler.removeCallbacks(inputFinishChecker)
             }
 
             override fun afterTextChanged(s: Editable?) {
                 // This method is called to notify you that somewhere within s, the text has been changed.
+                // If the users finish typing and if the input text is non-empty string, the app will trigger the language identification and translation
                 if (s.toString().trim() != "") {
                     lastTextEdit = System.currentTimeMillis()
                     handler.postDelayed(inputFinishChecker, delay)
@@ -181,11 +156,59 @@ class MainActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-//        Utils().hideSystemUI(this)
+        Utils().hideSystemUI(this)
     }
 
+    private fun setupButtons() {
+        // Set onClickListener for photo button
+        photoBtn.setOnClickListener {
+            toggleBtn(photoBtn, micBtn, cameraBtn, binding.photoText, binding.micText, binding.cameraText) // toggle on the photoBtn and turn off the others
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                // Request photo library permission if not granted
+                requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PHOTO_LIB_REQUEST_CODE)
+            } else {
+                selectImage()
+            }
+        }
+
+        // Set onClickListener for microphone button
+        micBtn.setOnClickListener {
+            Log.d("Line 116 Log", Locale.getAvailableLocales().toString())
+            toggleBtn(micBtn, photoBtn, cameraBtn, binding.micText, binding.photoText, binding.cameraText) // toggle on the micBtn and turn off the others
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                // Request audio record permission if not granted
+                requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), RECORD_AUDIO_CODE)
+            } else {
+                askSpeechInput()
+            }
+        }
+
+        // Set onClickListener for camera button
+        cameraBtn.setOnClickListener {
+            toggleBtn(cameraBtn, micBtn, photoBtn, binding.cameraText, binding.micText, binding.photoText) // toggle on the cameraBtn and turn off the others
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                // Request camera permission if not granted
+                requestPermissions(arrayOf(Manifest.permission.CAMERA), CAMERA_REQUEST_CODE)
+            } else {
+                openCamera()
+            }
+        }
+    }
+
+    /**
+     * Toggles the button states by changing their background colors.
+     * btn1 is set to a darker blue, while btn2 and btn3 are set to a lighter blue.
+     *
+     * @param btn1 The button to toggle on.
+     * @param btn2 The button to toggle off.
+     * @param btn3 The button to toggle off.
+     * @param txt1 The TextView to change color to match btn1.
+     * @param txt2 The TextView to change color to match btn2.
+     * @param txt3 The TextView to change color to match btn3.
+     */
     private fun toggleBtn(btn1: ImageButton, btn2: ImageButton, btn3: ImageButton,
                           txt1: TextView, txt2: TextView, txt3: TextView) {
+        // Toggle on btn1 and turn off btn2 and btn3 (toggle on means change the color to darker blue)
         btn1.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#304674"))
         txt1.setTextColor(ColorStateList.valueOf(Color.parseColor("#304674")))
         btn2.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#B2CBDE"))
@@ -194,12 +217,19 @@ class MainActivity : AppCompatActivity() {
         txt3.setTextColor(ColorStateList.valueOf(Color.parseColor("#B2CBDE")))
     }
 
+    /**
+     * Open photo library to select images
+     */
     private fun selectImage() {
         activityResultLauncher.launch("image/*")
     }
 
+    /**
+     * Open camera to capture the photos
+     */
     private fun openCamera() {
         try {
+            // Get the photoURI
             val photoFile = createPhotoFile()
             val photoURI: Uri = FileProvider.getUriForFile(
                 this,
@@ -218,7 +248,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
+    /**
+    * This function is used to rotate the image 90 degree.
+    * @param bitmap The bitmap image to rotate.
+    * @return: rotate bitmap
+    * */
     private fun rotateImageIfRequired(bitmap: Bitmap): Bitmap {
         val matrix = Matrix()
         matrix.postRotate(90f) // Rotate by 90 degrees clockwise
@@ -226,6 +260,12 @@ class MainActivity : AppCompatActivity() {
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
+    /**
+     * Converts a URI to a Bitmap.
+     *
+     * @param selectedFileUri The URI of the selected file.
+     * @return The Bitmap representation of the file, or null if an error occurs.
+     */
     private fun uriToBitmap(selectedFileUri: Uri): Bitmap? {
         try {
             val parcelFileDescriptor = contentResolver.openFileDescriptor(selectedFileUri, "r")
@@ -239,13 +279,18 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
+    /**
+     * Creates a temporary photo file in the external storage directory.
+     *
+     * @return The created File object.
+     */
     private fun createPhotoFile(): File {
         val fileName = "photo" + SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
         val storageDirectory = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         val imageFile = File.createTempFile(fileName, ".jpg", storageDirectory).apply {
             currentPhotoPath = absolutePath
         }
-//        Log.d("image file created:", "$imageFile")
+        Log.d("image file created:", "$imageFile")
         currentPhotoPath = imageFile.absolutePath
 
         return imageFile
@@ -254,10 +299,11 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == RECORD_AUDIO_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            // Permission was granted, open the camera
+            // Permission was granted, open the microphone
             askSpeechInput()
         }
         if (requestCode == PHOTO_LIB_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // Permission was granted, open the photo library
             selectImage()
         }
         if (requestCode == CAMERA_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -268,7 +314,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-//        Utils().hideSystemUI(this)
+        Utils().hideSystemUI(this)
         if (requestCode == RQ_SPEECH_REC && resultCode == RESULT_OK) {
             val result = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
             val handler = Handler(Looper.getMainLooper())
@@ -279,6 +325,8 @@ class MainActivity : AppCompatActivity() {
             handler.postDelayed(runnable, 500)
         } else if (resultCode == RESULT_OK && requestCode == IMAGE_CAPTURE_CODE) {
             // Process and display the captured image
+            // if the image file is create successfully, read and process text recognition on the image
+            // else pop-up message to let user know to try again
             if (::currentPhotoPath.isInitialized) {
                 val imageBitmap = BitmapFactory.decodeFile(currentPhotoPath)
                 val rotatedBitmap = rotateImageIfRequired(imageBitmap)
@@ -290,6 +338,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Initiates the speech recognition input prompt if available.
+     * If speech recognition is not available on the device, displays a toast message.
+     */
     private fun askSpeechInput() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             Utils().displayToastMessage(this, "Speech recognition is not available")

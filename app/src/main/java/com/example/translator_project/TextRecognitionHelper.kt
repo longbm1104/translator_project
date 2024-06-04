@@ -12,6 +12,11 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 class TextRecognitionHelper(private val activity: MainActivity) {
 
+    /**
+     * Runs text recognition on the given bitmap image.
+     *
+     * @param bitmap The bitmap image to perform text recognition on.
+     */
     fun runTextRecognition(bitmap: Bitmap) {
         val image = InputImage.fromBitmap(bitmap, 0)
         val recognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -26,6 +31,11 @@ class TextRecognitionHelper(private val activity: MainActivity) {
                 })
     }
 
+    /**
+     * Processes the result of text recognition and displays the detected text.
+     *
+     * @param texts The result of text recognition.
+     */
     private fun processTextRecognitionResult(texts: Text) {
         val blocks: List<Text.TextBlock> = texts.textBlocks
         if (blocks.isEmpty()) {
@@ -33,6 +43,7 @@ class TextRecognitionHelper(private val activity: MainActivity) {
             return
         }
 
+        // Process through line of block of detected text in the image
         var textToDisplay = ""
         for (i in blocks.indices) {
             val lines: List<Text.Line> = blocks[i].lines
